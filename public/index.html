@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoCAP — WiFi Handshake Cracker</title>
+    <meta name="description" content="NoCAP — a professional web console for cracking WiFi handshakes with hashcat. GPU auto-detection, capture conversion, dictionary management, and real-time monitoring.">
+    <meta name="robots" content="noindex, nofollow">
+
+    <!-- Set theme before paint to avoid a flash of the wrong theme -->
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('theme');
+                if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+        })();
+    </script>
+
+    <!-- Geist — the Vercel typeface -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Design tokens first, then app styles -->
+    <link rel="stylesheet" href="/css/tokens.css">
+    <link rel="stylesheet" href="/css/index.css">
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛜</text></svg>">
+</head>
+<body>
+    <div id="app">
+        <!-- ── Header ──────────────────────────────────────── -->
+        <header id="app-header">
+            <div class="header-left">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
+                        </svg>
+                    </div>
+                    <div class="logo-text">
+                        <h1>NoCAP</h1>
+                        <span class="logo-subtitle">WiFi Handshake Cracker</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-center">
+                <nav id="main-nav">
+                    <button class="nav-tab active" data-tab="workspace" id="nav-workspace">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        Crack
+                    </button>
+                    <button class="nav-tab" data-tab="dictionaries" id="nav-dictionaries">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        Dictionaries
+                    </button>
+                    <button class="nav-tab" data-tab="history" id="nav-history">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+                        History
+                    </button>
+                    <button class="nav-tab" data-tab="system" id="nav-system">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        System
+                    </button>
+                </nav>
+            </div>
+            <div class="header-right">
+                <div id="ws-indicator" class="status-dot disconnected" title="WebSocket disconnected">
+                    <span class="dot"></span>
+                    <span class="status-text">Offline</span>
+                </div>
+                <button id="theme-toggle" type="button" title="Toggle theme" aria-label="Toggle color theme">
+                    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- ── Main Content ────────────────────────────────── -->
+        <main id="main-content">
+
+            <!-- ════ WORKSPACE: Upload + Configure + Live ════ -->
+            <section id="tab-workspace" class="tab-panel active">
+                <div class="workspace">
+
+                    <!-- ── Left: configuration ─────────────────── -->
+                    <div class="workspace-config">
+                        <!-- Step 1 — Capture file -->
+                        <div class="config-card">
+                            <div class="config-card-head">
+                                <span class="step-num">1</span>
+                                <h3>Capture file</h3>
+                            </div>
+
+                            <div id="drop-zone" class="drop-zone compact">
+                                <div class="drop-zone-content">
+                                    <div class="drop-icon">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    </div>
+                                    <p>Drop a capture here or <button id="browse-btn" class="link-btn">browse</button></p>
+                                    <span class="supported-formats">.cap · .pcap · .pcapng · .hc22000</span>
+                                </div>
+                                <input type="file" id="file-input" accept=".cap,.pcap,.pcapng,.hc22000,.hccapx" hidden>
+                            </div>
+
+                            <div id="upload-progress" class="upload-progress hidden">
+                                <div class="progress-header">
+                                    <span id="upload-filename" class="filename"></span>
+                                    <span id="upload-status" class="status-badge">Uploading…</span>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div id="upload-progress-bar" class="progress-bar"></div>
+                                </div>
+                                <p id="upload-message" class="progress-message"></p>
+                            </div>
+
+                            <div id="conversion-result" class="conversion-result hidden">
+                                <div class="result-header">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                    <h3>Conversion Complete</h3>
+                                </div>
+                                <div id="conversion-details" class="result-details"></div>
+                            </div>
+
+                            <div class="config-group">
+                                <label class="config-label" for="hash-file-select">Hash file to crack</label>
+                                <select id="hash-file-select" class="config-select">
+                                    <option value="">— Upload a file first —</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Step 2 — Attack -->
+                        <div class="config-card">
+                            <div class="config-card-head">
+                                <span class="step-num">2</span>
+                                <h3>Attack configuration</h3>
+                            </div>
+
+                            <div class="config-group">
+                                <label class="config-label">Attack mode</label>
+                                <div class="attack-mode-grid" id="attack-mode-grid">
+                                    <button class="attack-mode-btn active" data-mode="0"><span class="mode-num">-a 0</span><span class="mode-name">Dictionary</span></button>
+                                    <button class="attack-mode-btn" data-mode="1"><span class="mode-num">-a 1</span><span class="mode-name">Combinator</span></button>
+                                    <button class="attack-mode-btn" data-mode="3"><span class="mode-num">-a 3</span><span class="mode-name">Brute-force</span></button>
+                                    <button class="attack-mode-btn" data-mode="6"><span class="mode-num">-a 6</span><span class="mode-name">Hybrid WL+Mask</span></button>
+                                    <button class="attack-mode-btn" data-mode="7"><span class="mode-num">-a 7</span><span class="mode-name">Hybrid Mask+WL</span></button>
+                                </div>
+                            </div>
+
+                            <div class="config-group" id="dict-group">
+                                <label class="config-label" for="dict-select">Dictionary / Wordlist</label>
+                                <select id="dict-select" class="config-select"><option value="">— Select a dictionary —</option></select>
+                            </div>
+
+                            <div class="config-group hidden" id="dict2-group">
+                                <label class="config-label" for="dict2-select">Second dictionary (Combinator)</label>
+                                <select id="dict2-select" class="config-select"><option value="">— Select second dictionary —</option></select>
+                            </div>
+
+                            <div class="config-group hidden" id="mask-group">
+                                <label class="config-label" for="mask-input">Mask pattern</label>
+                                <input type="text" id="mask-input" class="config-input" placeholder="e.g. ?d?d?d?d?d?d?d?d (8 digits)">
+                                <div class="mask-help">
+                                    <span class="mask-token">?l</span> lower
+                                    <span class="mask-token">?u</span> upper
+                                    <span class="mask-token">?d</span> digit
+                                    <span class="mask-token">?s</span> special
+                                    <span class="mask-token">?a</span> all
+                                </div>
+                            </div>
+
+                            <div class="config-group" id="rule-group">
+                                <label class="config-label" for="rule-select">Rule file (optional)</label>
+                                <select id="rule-select" class="config-select"><option value="">— No rules —</option></select>
+                            </div>
+
+                            <details class="config-advanced">
+                                <summary>Advanced</summary>
+                                <div class="config-group">
+                                    <label class="config-label" for="gpu-preset-card">GPU preset</label>
+                                    <div id="gpu-preset-card" class="gpu-preset-card"><span class="gpu-detecting">Detecting GPU…</span></div>
+                                </div>
+                                <div class="config-group">
+                                    <label class="config-label" for="custom-args">Custom arguments</label>
+                                    <input type="text" id="custom-args" class="config-input" placeholder="e.g. -O -w 3">
+                                </div>
+                            </details>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="crack-actions">
+                            <button id="btn-start-crack" class="btn btn-primary btn-lg">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                Start Cracking
+                            </button>
+                            <button id="btn-pause-crack" class="btn btn-warning" disabled>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                                Pause
+                            </button>
+                            <button id="btn-stop-crack" class="btn btn-danger" disabled>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+                                Stop
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ── Right: live telemetry ──────────────── -->
+                    <div class="workspace-live">
+                        <div id="job-result" class="job-result hidden"></div>
+
+                        <div class="monitor-cards">
+                            <div class="stat-card" id="card-status">
+                                <div class="stat-icon status-idle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+                                <div class="stat-info"><span class="stat-label">Status</span><span class="stat-value" id="monitor-status">Idle</span></div>
+                            </div>
+                            <div class="stat-card" id="card-speed">
+                                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                                <div class="stat-info"><span class="stat-label">Speed</span><span class="stat-value" id="monitor-speed">0 H/s</span></div>
+                            </div>
+                            <div class="stat-card" id="card-progress">
+                                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                                <div class="stat-info"><span class="stat-label">Progress</span><span class="stat-value" id="monitor-progress">0%</span></div>
+                            </div>
+                            <div class="stat-card" id="card-eta">
+                                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                                <div class="stat-info"><span class="stat-label">ETA</span><span class="stat-value" id="monitor-eta">N/A</span></div>
+                            </div>
+                            <div class="stat-card" id="card-temp">
+                                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg></div>
+                                <div class="stat-info"><span class="stat-label">GPU Temp</span><span class="stat-value" id="monitor-temp">— °C</span></div>
+                            </div>
+                            <div class="stat-card highlight" id="card-cracked">
+                                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                                <div class="stat-info"><span class="stat-label">Cracked</span><span class="stat-value" id="monitor-cracked">0 / 0</span></div>
+                            </div>
+                        </div>
+
+                        <div class="monitor-progress-section">
+                            <div class="progress-bar-container large"><div id="monitor-progress-bar" class="progress-bar"></div></div>
+                            <div class="progress-labels"><span id="progress-current">0</span><span id="progress-total">0</span></div>
+                        </div>
+
+                        <div class="cracked-section">
+                            <h3>Cracked Passwords</h3>
+                            <div id="cracked-list" class="cracked-list"><div class="empty-state">No passwords cracked yet</div></div>
+                        </div>
+
+                        <div class="log-section">
+                            <div class="log-header">
+                                <h3>Live Output</h3>
+                                <button id="btn-clear-log" class="btn btn-sm btn-ghost">Clear</button>
+                            </div>
+                            <div id="log-output" class="log-output"><div class="log-line system">Idle — configure an attack and press Start.</div></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ════ DICTIONARIES ════ -->
+            <section id="tab-dictionaries" class="tab-panel">
+                <div class="panel-header">
+                    <h2>Dictionary Manager</h2>
+                    <p>Download curated wordlists (WiFi-tuned and general) or upload your own.</p>
+                </div>
+
+                <div class="dict-sections">
+                    <div class="dict-section">
+                        <h3>Recommended &amp; available</h3>
+                        <div id="dict-sources" class="dict-grid"><div class="loading-spinner">Loading sources…</div></div>
+                    </div>
+
+                    <div class="dict-section">
+                        <h3>Your wordlists</h3>
+                        <div id="dict-downloaded" class="dict-list"><div class="empty-state">No dictionaries downloaded yet</div></div>
+                    </div>
+
+                    <div class="dict-section">
+                        <h3>Upload custom wordlist</h3>
+                        <div class="dict-upload-zone" id="dict-upload-zone">
+                            <input type="file" id="dict-file-input" accept=".txt,.dict,.wordlist,.lst,.rule" hidden>
+                            <p>Drop a wordlist here or <button id="dict-browse-btn" class="link-btn">browse</button></p>
+                            <span class="supported-formats">.txt · .dict · .wordlist · .lst · .rule</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ════ HISTORY ════ -->
+            <section id="tab-history" class="tab-panel">
+                <div class="panel-header">
+                    <h2>Crack History</h2>
+                    <p>A saved record of every job — attack mode, wordlist, result, and any passwords found.</p>
+                </div>
+                <div class="history-toolbar">
+                    <div id="history-summary" class="history-summary"></div>
+                    <div class="history-actions">
+                        <button id="btn-export-history" class="btn btn-sm btn-secondary">Export CSV</button>
+                        <button id="btn-refresh-history" class="btn btn-sm btn-ghost">Refresh</button>
+                        <button id="btn-clear-history" class="btn btn-sm btn-danger">Clear</button>
+                    </div>
+                </div>
+                <div id="history-content" class="history-content"><div class="loading-spinner">Loading history…</div></div>
+            </section>
+
+            <!-- ════ SYSTEM ════ -->
+            <section id="tab-system" class="tab-panel">
+                <div class="panel-header">
+                    <h2>System</h2>
+                    <p>Hardware, dependencies, cracked-password vault, and saved sessions.</p>
+                </div>
+
+                <div class="system-grid">
+                    <div class="system-card" id="server-card">
+                        <div class="system-card-header"><h3>NoCAP</h3></div>
+                        <div id="server-info" class="server-info"><div class="loading-spinner">Loading…</div></div>
+                    </div>
+
+                    <div class="system-card" id="gpu-card">
+                        <div class="system-card-header"><h3>GPU</h3><button id="btn-refresh-gpu" class="btn btn-sm btn-ghost">Refresh</button></div>
+                        <div id="gpu-info" class="gpu-info"><div class="loading-spinner">Detecting GPU…</div></div>
+                    </div>
+
+                    <div class="system-card" id="health-card">
+                        <div class="system-card-header"><h3>System Health</h3></div>
+                        <div id="health-info" class="health-info"><div class="loading-spinner">Loading…</div></div>
+                    </div>
+
+                    <div class="system-card" id="deps-card">
+                        <div class="system-card-header"><h3>Dependencies</h3></div>
+                        <div id="deps-info" class="deps-info"><div class="loading-spinner">Checking…</div></div>
+                    </div>
+
+                    <div class="system-card full-width" id="potfile-card">
+                        <div class="system-card-header"><h3>Potfile — All Cracked Passwords</h3><button id="btn-refresh-potfile" class="btn btn-sm btn-ghost">Refresh</button></div>
+                        <div id="potfile-content" class="potfile-content"><div class="empty-state">No cracked passwords yet</div></div>
+                    </div>
+
+                    <div class="system-card full-width" id="sessions-card">
+                        <div class="system-card-header"><h3>Saved Sessions</h3><button id="btn-refresh-sessions" class="btn btn-sm btn-ghost">Refresh</button></div>
+                        <div id="sessions-content" class="sessions-content"><div class="empty-state">No saved sessions</div></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <script src="/js/websocket.js"></script>
+    <script src="/js/upload.js"></script>
+    <script src="/js/cracker.js"></script>
+    <script src="/js/monitor.js"></script>
+    <script src="/js/dictionary.js"></script>
+    <script src="/js/gpu.js"></script>
+    <script src="/js/history.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>

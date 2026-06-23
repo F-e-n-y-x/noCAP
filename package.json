@@ -1,0 +1,33 @@
+{
+  "name": "nocap",
+  "version": "2.0.0",
+  "description": "NoCAP — a professional web console for cracking WiFi handshakes with hashcat. Auto GPU detection, capture conversion, dictionary management, and real-time monitoring.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "keywords": [
+    "hashcat",
+    "wifi",
+    "security",
+    "penetration-testing",
+    "wpa2",
+    "capture",
+    "cracking",
+    "gpu"
+  ],
+  "author": "Ayush",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "multer": "^1.4.5-lts.1",
+    "systeminformation": "^5.22.0",
+    "unzipper": "^0.12.5",
+    "uuid": "^10.0.0",
+    "ws": "^8.18.0"
+  }
+}

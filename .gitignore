@@ -1,0 +1,15 @@
+node_modules/
+uploads/
+dictionaries/
+sessions/
+*.hc22000
+*.hccapx
+*.cap
+*.pcap
+*.pcapng
+.env
+.DS_Store
+Thumbs.db
+*.log
+ 
+hashcat/
