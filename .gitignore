@@ -24,6 +24,7 @@ hashcat/
 # Secrets & local helpers
 .env
 push_to_github.bat
+implementation_plan.md
 
 # OS / editor cruft
 .DS_Store

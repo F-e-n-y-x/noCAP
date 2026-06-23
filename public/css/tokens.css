@@ -17,18 +17,21 @@
 /* ── 1 + 2. DARK THEME (default) ─────────────────────────────────────────── */
 :root,
 :root[data-theme="dark"] {
+    /* Make native controls (select popups, scrollbars, date pickers) render dark */
+    color-scheme: dark;
+
     /* Neutral ramp: 1 = app background → 12 = highest-contrast text */
-    --gray-1:  #0a0a0a;
-    --gray-2:  #0f0f0f;
-    --gray-3:  #161616;
-    --gray-4:  #1c1c1c;
-    --gray-5:  #232323;
-    --gray-6:  #2a2a2a;
-    --gray-7:  #343434;
-    --gray-8:  #454545;
-    --gray-9:  #5a5a5a;
-    --gray-10: #8f8f8f;
-    --gray-11: #a1a1a1;
+    --gray-1:  #121212;
+    --gray-2:  #181818;
+    --gray-3:  #1f1f1f;
+    --gray-4:  #262626;
+    --gray-5:  #2d2d2d;
+    --gray-6:  #353535;
+    --gray-7:  #404040;
+    --gray-8:  #4f4f4f;
+    --gray-9:  #636363;
+    --gray-10: #909090;
+    --gray-11: #a8a8a8;
     --gray-12: #fafafa;
 
     /* Accent (single hue — use sparingly for focus / links / key emphasis) */
@@ -73,6 +76,8 @@
 
 /* ── 1 + 2. LIGHT THEME ──────────────────────────────────────────────────── */
 :root[data-theme="light"] {
+    color-scheme: light;
+
     --gray-1:  #ffffff;
     --gray-2:  #fafafa;
     --gray-3:  #f5f5f5;
@@ -177,7 +182,7 @@
     --duration-3: 240ms;
 
     /* Layout */
-    --container-max: 1200px;
+    --container-max: 1600px;
     --header-height: 64px;
 }
 

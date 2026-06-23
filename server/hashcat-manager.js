@@ -915,6 +915,39 @@ function listSessions() {
 }
 
 /**
+ * Delete a saved session and its related files (.restore / .log / etc.).
+ */
+function deleteSession(sessionName) {
+    if (!sessionName || !/^[A-Za-z0-9_.-]+$/.test(sessionName)) {
+        return { error: 'Invalid session name' };
+    }
+    if (currentJob && currentJob.session === sessionName && currentJob.state === 'running') {
+        return { error: 'Cannot delete a running session — stop it first' };
+    }
+
+    const protectedFiles = new Set(['hashcat.potfile', 'history.json']);
+    const searchDirs = [config.dirs.sessions];
+    if (config.hashcatBinary) searchDirs.push(path.dirname(config.hashcatBinary));
+
+    let removed = 0;
+    for (const dir of searchDirs) {
+        if (!fs.existsSync(dir)) continue;
+        try {
+            for (const file of fs.readdirSync(dir)) {
+                if (protectedFiles.has(file)) continue;
+                if (file === sessionName || file.startsWith(sessionName + '.')) {
+                    const full = path.join(dir, file);
+                    if (config.isPathInside(full, [dir])) { fs.unlinkSync(full); removed++; }
+                }
+            }
+        } catch (err) { return { error: err.message }; }
+    }
+
+    if (removed === 0) return { error: 'Session not found' };
+    return { success: true, removed };
+}
+
+/**
  * Get job history.
  */
 function getHistory() {
@@ -937,6 +970,7 @@ module.exports = {
     pauseJob,
     resumeJob,
     listSessions,
+    deleteSession,
     getHistory,
     clearHistory,
     parseStatus,      // exposed for testing / status inspection

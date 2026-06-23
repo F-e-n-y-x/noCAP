@@ -5,9 +5,64 @@
 
 const express = require('express');
 const router = express.Router();
+const si = require('systeminformation');
 const { detectGPUs, invalidateCache } = require('../gpu-detector');
 const { getSystemHealth, runBenchmark, getHashcatVersion } = require('../hashcat-utils');
 const config = require('../config');
+
+/**
+ * GET /api/system/stats
+ * Live, task-manager style hardware telemetry (CPU per-core, RAM, GPU, disk).
+ * Works on Windows and Linux via systeminformation.
+ */
+router.get('/stats', async (req, res) => {
+    try {
+        const [load, mem, graphics, cpuTemp, fs] = await Promise.all([
+            si.currentLoad(),
+            si.mem(),
+            si.graphics(),
+            si.cpuTemperature().catch(() => ({})),
+            si.fsSize().catch(() => []),
+        ]);
+
+        const gpus = (graphics.controllers || [])
+            .filter((c) => c.vendor || c.model)
+            .map((c) => ({
+                model: c.model || 'GPU',
+                vendor: c.vendor || '',
+                util: numOrNull(c.utilizationGpu),
+                temp: numOrNull(c.temperatureGpu),
+                memUsed: numOrNull(c.memoryUsed),
+                memTotal: numOrNull(c.memoryTotal || c.vram),
+                power: numOrNull(c.powerDraw),
+                clock: numOrNull(c.clockCore),
+            }));
+
+        res.json({
+            cpu: {
+                load: round(load.currentLoad),
+                cores: (load.cpus || []).map((c) => round(c.load)),
+                temp: numOrNull(cpuTemp.main),
+            },
+            memory: {
+                total: mem.total,
+                used: mem.active,
+                percent: round((mem.active / mem.total) * 100),
+            },
+            gpus,
+            disks: (fs || [])
+                .filter((d) => d.size > 0)
+                .map((d) => ({ mount: d.mount, percent: round(d.use), used: d.used, total: d.size }))
+                .slice(0, 6),
+            ts: Date.now(),
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+function round(n) { return (n == null || isNaN(n)) ? 0 : Math.round(n); }
+function numOrNull(n) { return (n == null || isNaN(n)) ? null : Math.round(n); }
 
 /**
  * GET /api/system/gpu

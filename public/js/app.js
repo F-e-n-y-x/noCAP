@@ -84,6 +84,8 @@ async function initApp() {
     if (window.initDictionary) window.initDictionary();
     if (window.initGPU) window.initGPU();
     if (window.initHistory) window.initHistory();
+    if (window.initDevices) window.initDevices();
+    if (window.initCustomSelects) window.initCustomSelects();
     
     // Connect WebSocket last
     if (window.connectWebSocket) window.connectWebSocket();
@@ -166,6 +168,10 @@ async function loadSystemInfo() {
             <div class="info-row"><span class="info-label">Platform</span><span class="info-value">${escapeHtml(data.platform || '—')}</span></div>
             <div class="info-row"><span class="info-label">hashcat</span><span class="info-value ${data.hashcatInstalled ? 'success' : 'error'}">${data.hashcatInstalled ? escapeHtml(data.hashcatVersion || 'installed') : 'not found'}</span></div>
             <div class="info-row"><span class="info-label">Hash mode</span><span class="info-value">22000 · WPA</span></div>
+            <div class="info-row"><span class="info-label">Author</span><span class="info-value">
+                <a href="https://github.com/F-e-n-y-x/" target="_blank" rel="noopener">Ayush</a> ·
+                <a href="https://www.linkedin.com/in/ayushsoni2911/" target="_blank" rel="noopener">LinkedIn</a>
+            </span></div>
         `;
     }
 
@@ -267,7 +273,10 @@ async function loadSessions() {
                         <span class="info-value">${escapeHtml(s.name)}</span>
                         <span class="info-label" style="font-size:0.8rem">${new Date(s.modified).toLocaleString()}</span>
                     </div>
-                    <button class="btn btn-sm btn-ghost" data-session="${escapeHtml(s.name)}" onclick="resumeSession(this.dataset.session)">Resume</button>
+                    <div style="display:flex; gap:var(--space-2)">
+                        <button class="btn btn-sm btn-secondary" data-session="${escapeHtml(s.name)}" onclick="resumeSession(this.dataset.session)">Resume</button>
+                        <button class="btn btn-sm btn-danger" data-session="${escapeHtml(s.name)}" onclick="removeSession(this.dataset.session)">Delete</button>
+                    </div>
                 </div>
             `).join('')}
         </div>
@@ -299,6 +308,23 @@ async function loadPotfile() {
         </div>
     `;
 }
+
+window.removeSession = async function(sessionName) {
+    if (!confirm(`Delete session "${sessionName}"? This removes its restore/checkpoint files.`)) return;
+    try {
+        const res = await fetch('/api/hashcat/sessions', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionName })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Delete failed');
+        showToast('Session deleted', 'success');
+        if (window.loadSessions) window.loadSessions();
+    } catch (err) {
+        showToast(`Failed to delete session: ${err.message}`, 'error');
+    }
+};
 
 // Start app
 document.addEventListener('DOMContentLoaded', initApp);

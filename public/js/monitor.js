@@ -52,12 +52,16 @@ window.updateMonitorStatus = function(data) {
         const progCur = document.getElementById('progress-current');
         const progTot = document.getElementById('progress-total');
         
-        if (progVal && status.progressPercent !== undefined) {
-            progVal.textContent = `${status.progressPercent.toFixed(2)}%`;
+        if (status.progressPercent !== undefined) {
+            const pctText = `${status.progressPercent.toFixed(2)}%`;
+            if (progVal) progVal.textContent = pctText;
+            const bigPct = document.getElementById('progress-pct-big');
+            if (bigPct) bigPct.textContent = pctText;
         }
-        
+
         if (progBar && status.progressPercent !== undefined) {
             progBar.style.width = `${Math.min(status.progressPercent, 100)}%`;
+            progBar.classList.toggle('active', state === 'running' && status.progressPercent < 100);
         }
         
         if (progCur && progTot && status.progress) {

@@ -99,6 +99,18 @@ router.get('/sessions', (req, res) => {
 });
 
 /**
+ * DELETE /api/hashcat/sessions
+ * Delete a saved session and its related files.
+ */
+router.delete('/sessions', (req, res) => {
+    const { sessionName } = req.body || {};
+    if (!sessionName) return res.status(400).json({ error: 'sessionName required' });
+    const result = hashcatManager.deleteSession(sessionName);
+    if (result.error) return res.status(400).json(result);
+    res.json(result);
+});
+
+/**
  * GET /api/hashcat/history
  * Get job history.
  */

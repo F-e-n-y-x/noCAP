@@ -71,7 +71,10 @@
                     <span class="dot"></span>
                     <span class="status-text">Offline</span>
                 </div>
-                <button id="theme-toggle" type="button" title="Toggle theme" aria-label="Toggle color theme">
+                <a class="header-icon" href="https://github.com/F-e-n-y-x/noCAP" target="_blank" rel="noopener" title="NoCAP on GitHub" aria-label="View NoCAP on GitHub">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.48 0-.24-.01-.87-.01-1.7-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02.8-.22 1.65-.33 2.5-.34.85 0 1.7.12 2.5.34 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85 0 1.34-.01 2.42-.01 2.75 0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10z"/></svg>
+                </a>
+                <button id="theme-toggle" type="button" class="header-icon" title="Toggle theme" aria-label="Toggle color theme">
                     <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
                     <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                 </button>
@@ -238,9 +241,16 @@
                             </div>
                         </div>
 
-                        <div class="monitor-progress-section">
+                        <div class="progress-panel">
+                            <div class="progress-panel-head">
+                                <span class="progress-panel-label">Keyspace progress</span>
+                                <span class="progress-panel-pct" id="progress-pct-big">0%</span>
+                            </div>
                             <div class="progress-bar-container large"><div id="monitor-progress-bar" class="progress-bar"></div></div>
-                            <div class="progress-labels"><span id="progress-current">0</span><span id="progress-total">0</span></div>
+                            <div class="progress-labels">
+                                <span><span id="progress-current">0</span> tested</span>
+                                <span><span id="progress-total">0</span> total</span>
+                            </div>
                         </div>
 
                         <div class="cracked-section">
@@ -313,6 +323,14 @@
                 </div>
 
                 <div class="system-grid">
+                    <div class="system-card full-width" id="devices-card">
+                        <div class="system-card-header">
+                            <h3>Devices — Live</h3>
+                            <span id="devices-indicator" class="device-live"><span class="device-live-dot"></span> live</span>
+                        </div>
+                        <div id="devices-content" class="devices-content"><div class="loading-spinner">Reading sensors…</div></div>
+                    </div>
+
                     <div class="system-card" id="server-card">
                         <div class="system-card-header"><h3>NoCAP</h3></div>
                         <div id="server-info" class="server-info"><div class="loading-spinner">Loading…</div></div>
@@ -346,6 +364,22 @@
             </section>
         </main>
 
+        <footer id="app-footer">
+            <span class="footer-brand">NoCAP</span>
+            <span class="footer-sep">·</span>
+            <span>Made by
+                <a href="https://github.com/F-e-n-y-x/" target="_blank" rel="noopener">Ayush</a>
+            </span>
+            <span class="footer-links">
+                <a href="https://github.com/F-e-n-y-x/" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.48 0-.24-.01-.87-.01-1.7-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02.8-.22 1.65-.33 2.5-.34.85 0 1.7.12 2.5.34 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85 0 1.34-.01 2.42-.01 2.75 0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10z"/></svg>
+                </a>
+                <a href="https://www.linkedin.com/in/ayushsoni2911/" target="_blank" rel="noopener" title="LinkedIn" aria-label="LinkedIn">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.5 8h4V24h-4V8zm7.5 0h3.8v2.2h.05c.53-1 1.83-2.2 3.77-2.2 4.03 0 4.78 2.65 4.78 6.1V24h-4v-7.1c0-1.7-.03-3.88-2.37-3.88-2.37 0-2.73 1.85-2.73 3.76V24h-4V8z"/></svg>
+                </a>
+            </span>
+        </footer>
+
         <div id="toast-container" class="toast-container"></div>
     </div>
 
@@ -356,6 +390,8 @@
     <script src="/js/dictionary.js"></script>
     <script src="/js/gpu.js"></script>
     <script src="/js/history.js"></script>
+    <script src="/js/devices.js"></script>
+    <script src="/js/customselect.js"></script>
     <script src="/js/app.js"></script>
 </body>
 </html>

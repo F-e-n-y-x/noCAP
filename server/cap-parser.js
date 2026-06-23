@@ -192,11 +192,20 @@ function parseWPA(packets, linkType) {
             const llc = data.subarray(llcStart, llcStart + 8);
             if (llc[6] !== 0x88 || llc[7] !== 0x8e) continue; // Not 802.1X
 
-            const eapol = data.subarray(llcStart + 8);
+            let eapol = data.subarray(llcStart + 8);
             if (eapol.length < 99) continue;
 
             const eapolType = eapol[1];
             if (eapolType !== 3) continue; // Not Key
+
+            // CRITICAL: trim to the declared 802.1X length (4-byte header + body).
+            // Captures often append an FCS / padding to the frame; if that trailing
+            // data is left in the EAPOL field, hashcat computes the wrong MIC and the
+            // hash is uncrackable even with the correct password.
+            const declaredLen = 4 + eapol.readUInt16BE(2);
+            if (declaredLen >= 99 && declaredLen <= eapol.length) {
+                eapol = eapol.subarray(0, declaredLen);
+            }
 
             const keyInfo = eapol.readUInt16BE(5);
             const apNonce = eapol.subarray(17, 49); // used differently depending on dir
@@ -241,16 +250,20 @@ function parseWPA(packets, linkType) {
     // Build hashes
     const hashes = new Set();
     const networksFound = new Map();
+    let skippedNoEssid = 0;
 
     for (const [pairKey, msgs] of eapolMsgs.entries()) {
         const parts = pairKey.split('_');
         const apHex = parts[0];
         const clHex = parts[1];
-        
+
         const essid = beacons.get(apHex) || '';
         const essidHex = Buffer.from(essid, 'utf8').toString('hex');
-        
-        if (essid) networksFound.set(apHex, { bssid: apHex, essid });
+
+        // hashcat needs the ESSID as the PBKDF2 salt — a handshake without one
+        // (no beacon/probe captured for this AP) is uncrackable, so skip it.
+        if (!essid) { skippedNoEssid++; continue; }
+        networksFound.set(apHex, { bssid: apHex, essid });
 
         const m1s = msgs.filter(m => m.msgNum === 1);
         const m2s = msgs.filter(m => m.msgNum === 2);
@@ -282,13 +295,15 @@ function parseWPA(packets, linkType) {
     for (const p of pmkids) {
         const essid = beacons.get(p.apMac) || '';
         const essidHex = Buffer.from(essid, 'utf8').toString('hex');
-        if (essid) networksFound.set(p.apMac, { bssid: p.apMac, essid });
+        if (!essid) { skippedNoEssid++; continue; }
+        networksFound.set(p.apMac, { bssid: p.apMac, essid });
         hashes.add(`WPA*01*${p.pmkid}*${p.apMac}*${p.clMac}*${essidHex}***`);
     }
 
     return {
         hashes: Array.from(hashes),
-        networks: Array.from(networksFound.values())
+        networks: Array.from(networksFound.values()),
+        skippedNoEssid,
     };
 }
 
@@ -311,10 +326,13 @@ function convertToHc22000(inputPath, outputPath) {
                 networks: result.networks
             };
         } else {
+            const hint = result.skippedNoEssid > 0
+                ? ` Found ${result.skippedNoEssid} handshake(s)/PMKID(s) but no matching beacon — the capture is missing the network's ESSID, so they can't be cracked. Re-capture so a beacon or probe-response for the target AP is included.`
+                : '';
             return {
                 success: false,
                 hashes: 0,
-                error: 'No valid WPA handshakes or PMKIDs found in the capture file.'
+                error: 'No valid WPA handshakes or PMKIDs found in the capture file.' + hint
             };
         }
     } catch (err) {

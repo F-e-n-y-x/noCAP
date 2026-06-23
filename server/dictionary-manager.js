@@ -114,8 +114,16 @@ const DICTIONARY_SOURCES = [
         name: 'CrackStation — Human Passwords',
         description: 'Real human passwords only (~64M). Large but high-quality. Long download.',
         url: 'https://crackstation.net/files/crackstation-human-only.txt.gz',
-        size: '~247 MB (gz)', sizeBytes: 258940928, lines: 63941069,
+        size: '~247 MB → ~684 MB', sizeBytes: 684000000, lines: 63941069,
         category: 'large', recommendedFor: 'general', compressed: 'gz', recommended: false,
+    },
+    {
+        id: 'weakpass-hashmob-founds',
+        name: 'Weakpass — HashMob Founds (1.5 GB)',
+        description: 'Millions of real-world cracked passwords from HashMob. Heavy-duty list for WPA — best chance on tough handshakes. Long download.',
+        url: 'https://weakpass.com/download/1948/hk_hlm_founds.txt.gz',
+        size: '~563 MB → ~1.5 GB', sizeBytes: 1610612736, lines: 90000000,
+        category: 'large', recommendedFor: 'wifi', compressed: 'gz', recommended: true,
     },
 ];
 

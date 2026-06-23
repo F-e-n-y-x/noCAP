@@ -245,6 +245,6 @@ window.selectFileForCracking = function(filename) {
     if (select) {
         // Need to match the full path value
         const option = Array.from(select.options).find(opt => opt.text.includes(filename));
-        if (option) select.value = option.value;
+        if (option) { select.value = option.value; select.dispatchEvent(new Event('change', { bubbles: true })); }
     }
 };
