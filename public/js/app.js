@@ -87,6 +87,7 @@ async function initApp() {
     if (window.initDevices) window.initDevices();
     if (window.initCustomSelects) window.initCustomSelects();
     setupHashcatUpdate();
+    setupAppUpdate();
     
     // Connect WebSocket last
     if (window.connectWebSocket) window.connectWebSocket();
@@ -173,6 +174,7 @@ async function loadSystemInfo() {
                 <a href="https://github.com/F-e-n-y-x/" target="_blank" rel="noopener">Ayush</a> ·
                 <a href="https://www.linkedin.com/in/ayushsoni2911/" target="_blank" rel="noopener">LinkedIn</a>
             </span></div>
+            <div id="app-update-status" class="update-status"></div>
         `;
     }
 
@@ -305,6 +307,70 @@ async function loadPotfile() {
             `).join('')}
         </div>
     `;
+}
+
+// ── NoCAP app update (from GitHub, two-step: download → install) ───────
+function setupAppUpdate() {
+    const btn = document.getElementById('btn-check-app');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+        const status = document.getElementById('app-update-status');
+        const orig = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Checking…';
+        try {
+            const res = await fetch('/api/system/app/check');
+            const d = await res.json();
+            if (!res.ok) throw new Error(d.error || 'Check failed');
+            if (!status) return;
+            if (d.updateAvailable) {
+                status.innerHTML = `<div class="update-note warn">NoCAP <strong>v${escapeHtml(d.latest)}</strong> available (you have v${escapeHtml(d.current || '?')}).
+                    <button id="btn-app-download" class="btn btn-sm btn-primary">Download</button>
+                    <a href="${escapeHtml(d.repoUrl)}" target="_blank" rel="noopener">view on GitHub ↗</a></div>`;
+                document.getElementById('btn-app-download').addEventListener('click', appDownload);
+            } else if (d.current) {
+                status.innerHTML = `<div class="update-note ok">NoCAP v${escapeHtml(d.current)} is up to date.</div>`;
+            } else {
+                status.innerHTML = `<div class="update-note err">Could not read local version.</div>`;
+            }
+        } catch (err) {
+            if (status) status.innerHTML = `<div class="update-note err">${escapeHtml(err.message)}</div>`;
+        } finally {
+            btn.disabled = false; btn.textContent = orig;
+        }
+    });
+}
+
+async function appDownload() {
+    const status = document.getElementById('app-update-status');
+    if (status) status.innerHTML = `<div class="update-note">Downloading update from GitHub…</div>`;
+    try {
+        const res = await fetch('/api/system/app/download', { method: 'POST' });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error || 'Download failed');
+        showToast('Update downloaded — click Install to apply', 'success', 6000);
+        if (status) status.innerHTML = `<div class="update-note warn">Update downloaded (${(d.size / 1024).toFixed(0)} KB).
+            <button id="btn-app-install" class="btn btn-sm btn-primary">Install now</button></div>`;
+        document.getElementById('btn-app-install').addEventListener('click', appInstall);
+    } catch (err) {
+        showToast(`Download failed: ${err.message}`, 'error', 7000);
+        if (status) status.innerHTML = `<div class="update-note err">${escapeHtml(err.message)}</div>`;
+    }
+}
+
+async function appInstall() {
+    if (!confirm('Install the downloaded NoCAP update? App files will be replaced (your current version is backed up to .appbackup). You must restart the server afterwards.')) return;
+    const status = document.getElementById('app-update-status');
+    if (status) status.innerHTML = `<div class="update-note">Installing…</div>`;
+    try {
+        const res = await fetch('/api/system/app/install', { method: 'POST' });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error || 'Install failed');
+        showToast(`Updated to v${d.version || 'latest'} — restart the server to apply`, 'success', 12000);
+        if (status) status.innerHTML = `<div class="update-note ok">Installed v${escapeHtml(d.version || 'latest')}. <strong>Restart the server</strong> (re-run start.bat / npm start) to apply. If dependencies changed, run <code>npm install</code>.</div>`;
+    } catch (err) {
+        showToast(`Install failed: ${err.message}`, 'error', 8000);
+        if (status) status.innerHTML = `<div class="update-note err">${escapeHtml(err.message)} — your previous version is intact in .appbackup.</div>`;
+    }
 }
 
 // ── hashcat update ────────────────────────────────────────────────────

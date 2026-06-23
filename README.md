@@ -1,140 +1,151 @@
 # 🛜 NoCAP
 
-A professional, cross-platform web console for cracking WiFi handshakes using **hashcat**. Built for security education and authorized penetration testing.
+**NoCAP is a simple web app that checks how strong a WiFi password is.**
+
+You give it a small file captured from a WiFi network, NoCAP tries a huge list of
+passwords very fast using your graphics card, and tells you if it finds the right
+one — all from a clean page in your browser. No commands to memorize.
+
+> ⚠️ **Only use this on your own WiFi, or a network you have written permission to test.**
+> Cracking someone else's WiFi is illegal.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-green.svg)
-![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)
+
+---
+
+## What it does (in plain words)
+
+1. You upload a file captured from a WiFi network (a `.cap` file).
+2. NoCAP turns it into a format the cracking engine understands.
+3. It tries a big list of passwords against it, very fast, using your GPU.
+4. If one matches, it shows you the password.
+
+Under the hood it uses **hashcat**, a popular and powerful password-cracking tool.
+NoCAP just gives it a friendly screen so you don't have to type commands.
 
 ---
 
 ## ✨ Features
 
-| Feature | Description |
-|---------|-------------|
-| ⚡ **Single-page crack console** | Upload, configure, and watch live progress side-by-side — no tab hopping |
-| 🎯 **Auto GPU detection & presets** | Detects NVIDIA / AMD / Intel GPUs and applies tuned workload/temperature presets |
-| 🔄 **Built-in cap conversion** | Native `.cap/.pcap/.pcapng` → `.hc22000` parser (handshakes + PMKID), with `hcxpcapngtool` used when available |
-| 📚 **Dictionary manager** | One-click download of curated WiFi & general wordlists (tiny WPA lists → RockYou → 1.5 GB lists) with progress |
-| 📊 **Real-time monitoring** | Live status, speed, ETA, GPU temperature, and a redesigned keyspace progress panel over WebSocket |
-| 🧠 **Clear outcomes** | Tells you *why* a job ended — cracked / no match / error — with the real hashcat error and next steps |
-| 🗂️ **Persistent history** | Every job saved (attack, wordlist, result, passwords, duration) with CSV export |
-| 🖥️ **Live device telemetry** | Task-manager style RAM + GPU (load / temp / VRAM) panel, cross-platform |
-| ⏸️ **Sessions** | Pause, resume, restore, and delete checkpointed sessions |
-| ⬆️ **hashcat updater** | Check for and install the latest hashcat from the UI (safe swap with backup) |
-| 🔧 **All attack modes** | Dictionary, Combinator, Brute-force/Mask, Hybrid, and rule-based |
-| 🎨 **Token-based design system** | Clean Geist/Vercel-neutral UI with light & dark themes (no neon/glassmorphism) |
-| 🔐 **Secure by default** | Binds to localhost; optional bearer-token auth; validated inputs |
+- 🖥️ **All in one page** — upload, set up, and watch progress side by side.
+- 🎮 **Knows your GPU** — finds your graphics card and picks good settings automatically.
+- 📂 **Reads capture files for you** — `.cap`, `.pcap`, `.pcapng`. No extra tools needed.
+- 📚 **One-click password lists** — download good wordlists, from tiny to 1.5 GB.
+- 📊 **Live progress** — speed, time remaining, GPU temperature, and a clear progress bar.
+- ✅ **Plain results** — tells you if the password was *found*, *not found*, or there was an
+  *error* — and explains why and what to try next.
+- 🕘 **History** — keeps a record of every attempt, with CSV export.
+- 🔧 **Live system info** — see your RAM and GPU usage while it runs.
+- 🌙 **Light and dark themes.**
+- 🔄 **Built-in updates** — update hashcat and NoCAP itself from inside the app.
+- 🔒 **Safe by default** — only runs on your own computer unless you choose otherwise.
 
 ---
 
-## 📋 Prerequisites
+## ✅ What you need
 
-- **Node.js** ≥ 18.0.0 ([Download](https://nodejs.org/))
-- **Python** ≥ 3.8 ([Download](https://www.python.org/downloads/))
-- **hashcat** ([Download](https://hashcat.net/hashcat/))
-- **GPU Drivers** (CUDA for NVIDIA, ROCm for AMD, or OpenCL runtime for Intel)
+- A **Windows or Linux** computer with a graphics card (NVIDIA, AMD, or Intel).
+- **[Node.js](https://nodejs.org/)** version 18 or newer.
+- **[hashcat](https://hashcat.net/hashcat/)** — the cracking engine. NoCAP can download this
+  for you on first run if you don't have it.
+- Up-to-date **GPU drivers**.
 
-### Optional (Linux)
-- `hcxtools` — For native .cap conversion (auto-detected if installed)
+That's it. (Python is optional and only helps in rare cases.)
 
 ---
 
-## 🚀 Quick Start
+## 🚀 How to run it
 
-### Windows
-```batch
-# Double-click or run in terminal:
+**Windows** — double-click:
+```
 start.bat
 ```
 
-### Linux
+**Linux**:
 ```bash
-chmod +x start.sh
 ./start.sh
 ```
 
-The setup script will:
-1. ✅ Check all dependencies (Node.js, Python, hashcat)
-2. ✅ Install npm packages if needed
-3. ✅ Start the web server
-4. ✅ Open your browser to `http://localhost:3000`
+The script checks what's installed, grabs anything missing, starts the app, and opens
+it in your browser at **http://localhost:3000**. Done.
 
 ---
 
-## 🎮 Usage
+## 🎮 How to use it (step by step)
 
-The UI has four pages:
+1. Open the **Crack** page and drag in your `.cap` file. NoCAP converts it automatically.
+2. Pick the converted file, choose a **password list**, and leave the attack type as
+   *Dictionary* (a good default).
+3. Click **Start**. On the right you'll see live speed, progress, and GPU temperature.
+4. When it finishes, NoCAP tells you what happened:
+   - ✅ **Found** — shows you the password.
+   - ⭕ **Not found** — the password wasn't in your list. Try a bigger one.
+   - ❌ **Error** — shows the reason in plain language.
 
-- **Crack** — drop a `.cap`, pick the hash file, choose an attack mode + dictionary, hit **Start**, and watch live telemetry beside the controls.
-- **Dictionaries** — download curated wordlists or upload your own.
-- **History** — review past jobs and export to CSV.
-- **System** — live RAM/GPU telemetry, dependency status, potfile vault, sessions, and a one-click **hashcat update** check.
-
-> **Tip for getting cracks:** WPA needs the network's beacon (for the ESSID) in the capture, and the password must be in your wordlist. Start with a WiFi list, then RockYou, then a larger list.
-
----
-
-## 🏗️ Architecture
-
-```
-Frontend (vanilla JS + token design system)
-        │  REST API + WebSocket
-        ▼
-Express server ── hashcat process manager ──► hashcat
-        ├─ native cap → hc22000 parser
-        ├─ GPU detector + presets
-        ├─ dictionary downloader
-        └─ live system telemetry / updater
-```
+> 💡 **Tip:** Small lists are fast but find fewer passwords. If nothing is found, try a
+> bigger list like **RockYou**, then one of the large lists. Also, your capture must
+> include the network's name (it usually does) for cracking to work.
 
 ---
 
-## 🔐 Security & Network Access
+## 📄 The four pages
 
-By default the server binds to **`127.0.0.1` (localhost only)** — it is *not* reachable from
-other machines. This is deliberate: the app spawns processes and reads local files.
+| Page | What it's for |
+|------|---------------|
+| **Crack** | Do the actual cracking and watch it live. |
+| **Dictionaries** | Download ready-made password lists, or upload your own. |
+| **History** | See past attempts and export them to a spreadsheet. |
+| **System** | Live GPU/RAM info, check for updates, and view all found passwords. |
 
-To expose it on your LAN, set both of these (never one without the other):
+---
+
+## 🔒 Is it safe to run?
+
+Yes. By default NoCAP only runs on **your own computer** — nobody else on your network can
+open it. You don't need to change anything.
+
+<details>
+<summary>Advanced: open it to other devices (e.g. your phone)</summary>
+
+If you want to reach NoCAP from another device, run it like this (set a password so only
+you can use it):
 
 ```bash
 # Windows (PowerShell)
-$env:HOST="0.0.0.0"; $env:AUTH_TOKEN="choose-a-long-secret"; npm start
+$env:HOST="0.0.0.0"; $env:AUTH_TOKEN="pick-a-secret"; npm start
 
 # Linux / macOS
-HOST=0.0.0.0 AUTH_TOKEN="choose-a-long-secret" npm start
+HOST=0.0.0.0 AUTH_TOKEN="pick-a-secret" npm start
 ```
 
-When `AUTH_TOKEN` is set, API requests must include it as `Authorization: Bearer <token>`,
-an `X-Auth-Token` header, or a `?token=` query parameter (the WebSocket uses `?token=`).
+| Setting | Default | Meaning |
+|--------|---------|---------|
+| `PORT` | `3000` | Which port the app uses. |
+| `HOST` | `127.0.0.1` | `127.0.0.1` = this computer only. `0.0.0.0` = reachable on your network. |
+| `AUTH_TOKEN` | *(off)* | When set, the app asks for this secret before letting anyone in. |
 
-| Env var | Default | Purpose |
-|---------|---------|---------|
-| `PORT` | `3000` | HTTP port |
-| `HOST` | `127.0.0.1` | Bind address (`0.0.0.0` for LAN) |
-| `AUTH_TOKEN` | *(unset)* | Required bearer token when set |
-
----
-
-## ⚠️ Disclaimer
-
-> **This tool is for educational and authorized security testing purposes only.**
-> 
-> - Only use this tool on networks you own or have explicit written permission to test.
-> - Unauthorized access to computer networks is illegal in most jurisdictions.
-> - The authors are not responsible for misuse of this tool.
-> - This project was developed as part of an MCA security research curriculum.
+</details>
 
 ---
 
-## 👤 Author
+## ⚠️ Please read — legal note
 
-Made by **Ayush** — [GitHub](https://github.com/F-e-n-y-x/) · [LinkedIn](https://www.linkedin.com/in/ayushsoni2911/)
+This tool is for **learning** and **testing your own security** only.
 
-Repository: [github.com/F-e-n-y-x/noCAP](https://github.com/F-e-n-y-x/noCAP)
+- Only use it on networks you **own** or have **written permission** to test.
+- Accessing networks without permission is **illegal** in most places.
+- The author isn't responsible for misuse.
 
 ---
+
+## 👤 Made by
+
+**Ayush** — [GitHub](https://github.com/F-e-n-y-x/) · [LinkedIn](https://www.linkedin.com/in/ayushsoni2911/)
+
+Project: [github.com/F-e-n-y-x/noCAP](https://github.com/F-e-n-y-x/noCAP)
 
 ## 📄 License
 
-MIT License — see [LICENSE](LICENSE) for details.
+[MIT](LICENSE) — free to use, modify, and share.

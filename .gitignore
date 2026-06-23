@@ -12,6 +12,10 @@ hashcat/
 hashcat_backup/
 .hcupdate/
 
+# Self-updater scratch / backups
+.appupdate/
+.appbackup/
+
 # Capture files & cracked output
 *.hc22000
 *.hccapx

@@ -44,6 +44,7 @@ async function detectGPUs() {
 
         if (graphics.controllers && graphics.controllers.length > 0) {
             for (const ctrl of graphics.controllers) {
+                if (isVirtualGpu(ctrl.model, ctrl.vendor)) continue; // skip RDP/virtual adapters
                 const gpu = {
                     model: ctrl.model || 'Unknown',
                     vendor: ctrl.vendor || 'Unknown',
@@ -180,6 +181,15 @@ function guessVendor(model) {
 }
 
 /**
+ * Virtual / remote / software display adapters that can't do GPU compute and
+ * must be ignored (e.g. RDP's "Microsoft Remote Display Adapter").
+ */
+function isVirtualGpu(model, vendor) {
+    const s = `${model || ''} ${vendor || ''}`.toLowerCase();
+    return /remote display|microsoft basic display|basic render|\brdp\b|hyper-?v|citrix|vmware|virtualbox|parsec|mirror driver|indirect display|\bidd\b|meta virtual|software adapter/.test(s);
+}
+
+/**
  * Check if GPU model name suggests integrated graphics.
  */
 function isIntegrated(model) {
@@ -202,4 +212,4 @@ function invalidateCache() {
     cachedGPUInfo = null;
 }
 
-module.exports = { detectGPUs, invalidateCache };
+module.exports = { detectGPUs, invalidateCache, isVirtualGpu };

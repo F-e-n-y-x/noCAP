@@ -6,12 +6,38 @@
 const express = require('express');
 const router = express.Router();
 const si = require('systeminformation');
-const { detectGPUs, invalidateCache } = require('../gpu-detector');
+const { detectGPUs, invalidateCache, isVirtualGpu } = require('../gpu-detector');
 const { getSystemHealth, runBenchmark, getHashcatVersion } = require('../hashcat-utils');
 const { checkUpdate, performUpdate } = require('../hashcat-updater');
+const { checkAppUpdate, downloadAppUpdate, installAppUpdate } = require('../app-updater');
 const config = require('../config');
 
 let updateInProgress = false;
+let appUpdateBusy = false;
+
+/** GET /api/system/app/check — compare NoCAP version with the GitHub repo. */
+router.get('/app/check', async (req, res) => {
+    try { res.json(await checkAppUpdate()); }
+    catch (err) { res.status(502).json({ error: `Update check failed: ${err.message}` }); }
+});
+
+/** POST /api/system/app/download — download the latest NoCAP source (step 1). */
+router.post('/app/download', async (req, res) => {
+    if (appUpdateBusy) return res.status(409).json({ error: 'Already busy' });
+    appUpdateBusy = true;
+    try { res.json(await downloadAppUpdate()); }
+    catch (err) { res.status(500).json({ error: err.message }); }
+    finally { appUpdateBusy = false; }
+});
+
+/** POST /api/system/app/install — extract + apply the downloaded update (step 2). */
+router.post('/app/install', async (req, res) => {
+    if (appUpdateBusy) return res.status(409).json({ error: 'Already busy' });
+    appUpdateBusy = true;
+    try { res.json(await installAppUpdate()); }
+    catch (err) { res.status(500).json({ error: err.message }); }
+    finally { appUpdateBusy = false; }
+});
 
 /**
  * GET /api/system/hashcat/check — compare installed hashcat vs latest release.
@@ -56,7 +82,7 @@ router.get('/stats', async (req, res) => {
         ]);
 
         const gpus = (graphics.controllers || [])
-            .filter((c) => c.vendor || c.model)
+            .filter((c) => (c.vendor || c.model) && !isVirtualGpu(c.model, c.vendor))
             .map((c) => ({
                 model: c.model || 'GPU',
                 vendor: c.vendor || '',
