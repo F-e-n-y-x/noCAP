@@ -2,7 +2,7 @@
 
 **NoCAP is a simple web app that checks how strong a WiFi password is.**
 
-You give it a small file captured from a WiFi network, NoCAP tries a huge list of
+You give it a .cap/.pcap/.pcapng/.hc22000 file, NoCAP tries a huge list of
 passwords very fast using your graphics card, and tells you if it finds the right
 one — all from a clean page in your browser. No commands to memorize.
 
