@@ -39,6 +39,66 @@ router.post('/app/install', async (req, res) => {
     finally { appUpdateBusy = false; }
 });
 
+/** GET /api/system/settings — shows the SAVED/pending values (so the form doesn't
+ *  revert after saving) plus whether a restart is needed. Never returns the token. */
+router.get('/settings', (req, res) => {
+    const saved = config.loadSettings();
+    // Effective = what will be in force after restart (env vars always win and lock the field)
+    const effHost = config.envLocked.host ? config.host : (saved.host || config.host);
+    const effPort = config.envLocked.port ? config.port : (saved.port || config.port);
+    const effHasAuth = config.envLocked.authToken ? !!config.authToken : !!saved.authToken;
+    const effStatus = saved.statusInterval || config.statusInterval;
+
+    res.json({
+        networkAccess: effHost === '0.0.0.0',
+        host: effHost,
+        port: effPort,
+        hasAuth: effHasAuth,
+        statusInterval: effStatus,
+        envLocked: config.envLocked,
+        // running values + whether the saved settings differ (i.e. a restart is pending)
+        running: { networkAccess: config.host === '0.0.0.0', port: config.port, hasAuth: !!config.authToken },
+        restartPending: (effHost !== config.host) || (effPort !== config.port) || (effHasAuth !== !!config.authToken),
+    });
+});
+
+/** POST /api/system/settings — persist settings to settings.json (some need a restart). */
+router.post('/settings', (req, res) => {
+    const body = req.body || {};
+    const next = { ...config.loadSettings() };
+    const errors = [];
+    let restartRequired = false;
+
+    if (body.networkAccess !== undefined && !config.envLocked.host) {
+        const host = body.networkAccess ? '0.0.0.0' : '127.0.0.1';
+        if (host !== config.host) restartRequired = true;
+        next.host = host;
+    }
+    if (body.port !== undefined && !config.envLocked.port) {
+        const port = parseInt(body.port, 10);
+        if (!(port >= 1 && port <= 65535)) errors.push('Port must be between 1 and 65535');
+        else { if (port !== config.port) restartRequired = true; next.port = port; }
+    }
+    if (body.authToken !== undefined && !config.envLocked.authToken) {
+        const tok = String(body.authToken || '').trim();
+        const newTok = tok || null;
+        if (newTok !== config.authToken) restartRequired = true;
+        if (newTok) next.authToken = newTok; else delete next.authToken;
+    }
+    if (body.statusInterval !== undefined) {
+        const si = parseInt(body.statusInterval, 10);
+        if (!(si >= 1000 && si <= 30000)) errors.push('Status interval must be between 1 and 30 seconds');
+        else { next.statusInterval = si; config.statusInterval = si; } // applies to the next job, no restart
+    }
+
+    if (errors.length) return res.status(400).json({ error: errors.join('; ') });
+
+    try { config.saveSettings(next); }
+    catch (err) { return res.status(500).json({ error: `Failed to save: ${err.message}` }); }
+
+    res.json({ success: true, restartRequired });
+});
+
 /**
  * GET /api/system/hashcat/check — compare installed hashcat vs latest release.
  */

@@ -64,12 +64,22 @@ window.connectWebSocket = function() {
 function handleWSMessage(type, data) {
     switch (type) {
         // ── Hashcat Job Events ──────────────────────────
-        case 'connected':
-            // data = { state, job } from getStatus(); job.status is the parsed metrics
+        case 'connected': {
+            // data = { state, job } from getStatus(); job.status is the parsed metrics.
+            // On a page refresh while a job is running, restore the live view.
+            const active = data.state && !['idle', 'completed', 'exhausted', 'aborted', 'error'].includes(data.state);
+            if (data.job) {
+                if (window.restoreLog) window.restoreLog(data.job.output);
+                if (data.job.crackedPasswords && data.job.crackedPasswords.length && window.updateCrackedList) {
+                    window.updateCrackedList(data.job.crackedPasswords);
+                }
+            }
             if (window.updateMonitorStatus) {
                 window.updateMonitorStatus({ state: data.state, status: data.job && data.job.status, job: data.job });
             }
+            if (active) showToast('Reconnected to a job already running — see live progress below', 'info');
             break;
+        }
 
         case 'job:status':
             // data IS the parsed status object (metrics) — wrap it into the expected shape
@@ -87,12 +97,14 @@ function handleWSMessage(type, data) {
             if (window.setCrackerState) window.setCrackerState('running');
             if (window.clearLogOutput) window.clearLogOutput();
             if (window.hideJobResult) window.hideJobResult();
+            if (window.loadSessions) window.loadSessions();
             break;
             
         case 'job:finished':
             if (window.setCrackerState) window.setCrackerState('idle');
             if (window.showJobResult) window.showJobResult(data);
             if (window.loadHistory) window.loadHistory();
+            if (window.loadSessions) window.loadSessions();
             if (data.crackedPasswords && data.crackedPasswords.length > 0) {
                 if (window.updateCrackedList) window.updateCrackedList(data.crackedPasswords);
                 if (window.loadPotfile) window.loadPotfile();

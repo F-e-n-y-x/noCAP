@@ -29,6 +29,7 @@ hashcat_backup/
 
 # Secrets & local helpers
 .env
+settings.json
 push_to_github.bat
 implementation_plan.md
 

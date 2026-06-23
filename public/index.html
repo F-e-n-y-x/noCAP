@@ -279,7 +279,10 @@
                     </div>
 
                     <div class="dict-section">
-                        <h3>Your wordlists</h3>
+                        <div class="system-card-header" style="margin-bottom:var(--space-4)">
+                            <h3 style="margin:0">Your wordlists</h3>
+                            <button id="btn-refresh-dicts" class="btn btn-sm btn-ghost">Refresh</button>
+                        </div>
                         <div id="dict-downloaded" class="dict-list"><div class="empty-state">No dictionaries downloaded yet</div></div>
                     </div>
 
@@ -332,6 +335,11 @@
                         <div id="deps-info" class="deps-info"><div class="loading-spinner">Checking…</div></div>
                     </div>
 
+                    <div class="system-card" id="settings-card">
+                        <div class="system-card-header"><h3>Settings</h3></div>
+                        <div id="settings-content" class="settings-content"><div class="loading-spinner">Loading…</div></div>
+                    </div>
+
                     <div class="system-card full-width" id="devices-card">
                         <div class="system-card-header">
                             <h3>Devices — Live</h3>
@@ -380,6 +388,7 @@
     <script src="/js/gpu.js"></script>
     <script src="/js/history.js"></script>
     <script src="/js/devices.js"></script>
+    <script src="/js/settings.js"></script>
     <script src="/js/customselect.js"></script>
     <script src="/js/app.js"></script>
 </body>

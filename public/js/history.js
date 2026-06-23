@@ -78,6 +78,12 @@ function fmtDuration(ms) {
     return `${h}h ${rm}m`;
 }
 
+function historyFile(h) {
+    if (!h.hashFile) return '—';
+    // Strip the upload timestamp prefix (e.g. "1782209464207_handshake_X.hc22000")
+    return String(h.hashFile).replace(/^\d{10,}_/, '');
+}
+
 function historyTarget(h) {
     if (h.dictionary && h.mask) return `${h.dictionary} + ${h.mask}`;
     if (h.dictionary) return h.dictionary + (h.ruleFile ? ` (+${h.ruleFile})` : '');
@@ -133,6 +139,7 @@ window.loadHistory = async function () {
             <thead>
                 <tr>
                     <th>When</th>
+                    <th>Capture / hash file</th>
                     <th>Attack</th>
                     <th>Wordlist / Mask</th>
                     <th>Result</th>
@@ -146,6 +153,7 @@ window.loadHistory = async function () {
                     return `
                     <tr>
                         <td class="hist-when">${escapeHtml(new Date(h.endTime || h.startTime).toLocaleString())}</td>
+                        <td class="hist-file mono" title="${escapeHtml(h.hashFile || '')}">${escapeHtml(historyFile(h))}</td>
                         <td>${escapeHtml(h.attackModeName || '—')}</td>
                         <td class="hist-target mono">${escapeHtml(historyTarget(h))}</td>
                         <td><span class="badge badge-${r.tone}">${escapeHtml(r.label)}</span></td>

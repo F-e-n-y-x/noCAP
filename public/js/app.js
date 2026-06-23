@@ -85,6 +85,7 @@ async function initApp() {
     if (window.initGPU) window.initGPU();
     if (window.initHistory) window.initHistory();
     if (window.initDevices) window.initDevices();
+    if (window.initSettings) window.initSettings();
     if (window.initCustomSelects) window.initCustomSelects();
     setupHashcatUpdate();
     setupAppUpdate();
@@ -253,34 +254,58 @@ async function loadRules() {
     if (window.updateRuleSelect) window.updateRuleSelect(data.rules);
 }
 
+const ACTIVE_STATES = ['starting', 'running', 'pausing', 'paused', 'stopping', 'resuming'];
+
 async function loadSessions() {
-    const res = await fetch('/api/hashcat/sessions');
-    const data = await res.json();
-    
     const container = document.getElementById('sessions-content');
     if (!container) return;
-    
-    if (data.sessions.length === 0) {
-        container.innerHTML = '<div class="empty-state">No saved sessions</div>';
+
+    let sessions = [], status = null;
+    try {
+        const [sRes, stRes] = await Promise.all([
+            fetch('/api/hashcat/sessions'),
+            fetch('/api/hashcat/status'),
+        ]);
+        sessions = (await sRes.json()).sessions || [];
+        status = await stRes.json();
+    } catch { /* keep going with whatever we have */ }
+
+    // Currently-running job (so you can jump back to it after a refresh)
+    let activeHtml = '';
+    if (status && status.job && ACTIVE_STATES.includes(status.state)) {
+        const j = status.job;
+        const pct = (j.status && j.status.progressPercent != null) ? ` · ${j.status.progressPercent.toFixed(2)}%` : '';
+        const target = j.dictionary || j.mask || '';
+        const file = j.hashFile ? j.hashFile.split(/[\\/]/).pop() : '';
+        activeHtml = `
+            <div class="info-row active-job">
+                <div style="display:flex; flex-direction:column;">
+                    <span class="info-value"><span class="active-dot"></span> Running now${pct}</span>
+                    <span class="info-label" style="font-size:0.8rem">${escapeHtml([file, target].filter(Boolean).join(' · '))}</span>
+                </div>
+                <button class="btn btn-sm btn-primary" onclick="switchTab('workspace')">Open monitor</button>
+            </div>`;
+    }
+
+    const savedHtml = sessions.length
+        ? sessions.map(s => `
+            <div class="info-row">
+                <div style="display:flex; flex-direction:column;">
+                    <span class="info-value">${escapeHtml(s.name)}</span>
+                    <span class="info-label" style="font-size:0.8rem">${new Date(s.modified).toLocaleString()}</span>
+                </div>
+                <div style="display:flex; gap:var(--space-2)">
+                    <button class="btn btn-sm btn-secondary" data-session="${escapeHtml(s.name)}" onclick="resumeSession(this.dataset.session)">Resume</button>
+                    <button class="btn btn-sm btn-danger" data-session="${escapeHtml(s.name)}" onclick="removeSession(this.dataset.session)">Delete</button>
+                </div>
+            </div>`).join('')
+        : '';
+
+    if (!activeHtml && !savedHtml) {
+        container.innerHTML = '<div class="empty-state">No active or saved sessions</div>';
         return;
     }
-    
-    container.innerHTML = `
-        <div class="sessions-list">
-            ${data.sessions.map(s => `
-                <div class="info-row">
-                    <div style="display:flex; flex-direction:column;">
-                        <span class="info-value">${escapeHtml(s.name)}</span>
-                        <span class="info-label" style="font-size:0.8rem">${new Date(s.modified).toLocaleString()}</span>
-                    </div>
-                    <div style="display:flex; gap:var(--space-2)">
-                        <button class="btn btn-sm btn-secondary" data-session="${escapeHtml(s.name)}" onclick="resumeSession(this.dataset.session)">Resume</button>
-                        <button class="btn btn-sm btn-danger" data-session="${escapeHtml(s.name)}" onclick="removeSession(this.dataset.session)">Delete</button>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `;
+    container.innerHTML = `<div class="sessions-list">${activeHtml}${savedHtml || '<div class="empty-state" style="padding:var(--space-4)">No saved (paused) sessions</div>'}</div>`;
 }
 
 async function loadPotfile() {

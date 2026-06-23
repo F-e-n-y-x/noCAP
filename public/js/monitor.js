@@ -160,6 +160,16 @@ window.clearLogOutput = function() {
     if (out) out.innerHTML = '';
 };
 
+// Repaint the live log from saved output (used when reconnecting to a running job)
+window.restoreLog = function(lines) {
+    const out = document.getElementById('log-output');
+    if (!out || !Array.isArray(lines) || lines.length === 0) return;
+    out.innerHTML = '';
+    for (const line of lines) {
+        if (line && !line.startsWith('{')) window.appendLogOutput(line.replace(/^\[stderr\]\s*/, ''));
+    }
+};
+
 window.hideJobResult = function() {
     const el = document.getElementById('job-result');
     if (el) { el.classList.add('hidden'); el.innerHTML = ''; }

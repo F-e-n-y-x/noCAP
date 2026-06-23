@@ -228,6 +228,14 @@ function splitLines(buffer) {
     return buffer.split(/\r\n|\r|\n/);
 }
 
+/** Keep a capped buffer of the lines actually shown in the live log, so the view
+ *  can be restored after a page refresh without the status-table noise. */
+function pushLog(job, line) {
+    if (!job.logLines) job.logLines = [];
+    job.logLines.push(line);
+    if (job.logLines.length > 400) job.logLines.shift();
+}
+
 /**
  * Try to parse a hashcat --status-json object embedded anywhere in `text`.
  * hashcat often prints the keypress menu and the JSON on the same segment
@@ -281,7 +289,7 @@ function updateStatusFromText(job, line) {
 
     if (!matched) return false;
 
-    broadcast('job:status', {
+    const statusObj = {
         status: 3,
         statusLabel: acc.label || 'Running',
         speed: acc.speed || 0,
@@ -293,7 +301,9 @@ function updateStatusFromText(job, line) {
         etaFormatted: acc.etaText || 'N/A',
         recovered: acc.recovered ? { cracked: acc.recovered[0], total: acc.recovered[1] } : { cracked: 0, total: 0 },
         temperature: acc.temp != null ? acc.temp : null,
-    });
+    };
+    job.lastStatus = statusObj; // remember so a refreshed page can restore it
+    broadcast('job:status', statusObj);
     return true;
 }
 
@@ -311,13 +321,17 @@ function ingestStdoutLine(job, rawLine) {
     // 1) JSON status (possibly prefixed with menu text) → parse + broadcast metrics
     if (line.includes('{') && tryParseStatus(job, line)) return;
 
-    // 2) Plain-text status table → parse + broadcast metrics
-    if (HC_TABLE_RE.test(line)) { updateStatusFromText(job, line); return; }
+    // 2) Any known status field (speed / progress / recovered / ETA / temp).
+    //    Checked on every line because hashcat pads labels with a variable number
+    //    of dots — gating on the dot count would miss lines like "Hardware.Mon.#01: Temp:…".
+    if (updateStatusFromText(job, line)) return;
 
     // 3) Noise we don't want in the log
     if (HC_MENU_RE.test(line)) return; // the [s]tatus [p]ause … keypress menu
+    if (HC_TABLE_RE.test(line)) return; // remaining status-table rows (Session, Guess.Base, …)
 
     // 4) Everything else (banners, warnings, the cracked result) → live log
+    pushLog(job, line);
     broadcast('job:output', { line, stream: 'stdout' });
 }
 
@@ -372,7 +386,7 @@ function getStatus() {
             mask: currentJob.mask,
             startTime: currentJob.startTime,
             status: currentJob.lastStatus,
-            output: currentJob.outputLines.slice(-50),
+            output: (currentJob.logLines || []).slice(-150),
             crackedPasswords: currentJob.crackedPasswords,
         },
     };
@@ -498,6 +512,7 @@ async function startJob(opts) {
         process: null,
         lastStatus: null,
         outputLines: [],
+        logLines: [],
         errorLines: [],
         userStopped: false,
         crackedPasswords: [],
@@ -527,6 +542,10 @@ async function startJob(opts) {
     job.process = proc;
     job.state = 'running';
 
+    // hashcat reads keypresses from stdin; when it exits, that pipe can emit EPIPE.
+    // Without this listener the error is unhandled and can take the server down.
+    if (proc.stdin) proc.stdin.on('error', () => { /* ignore broken-pipe on exit */ });
+
     // Handle stdout — split on CR/LF so JSON status lines are isolated
     let stdoutBuffer = '';
     proc.stdout.on('data', (chunk) => {
@@ -546,38 +565,42 @@ async function startJob(opts) {
             if (!line.trim()) continue;
             job.outputLines.push(`[stderr] ${line}`);
             job.errorLines.push(line.trim());
+            pushLog(job, line);
             broadcast('job:output', { line, stream: 'stderr' });
         }
     });
 
-    // Handle exit
+    // Handle exit — fully guarded so nothing here can ever crash the server
     proc.on('close', (code, signal) => {
-        // Flush any buffered partial lines
-        if (stdoutBuffer.trim()) ingestStdoutLine(job, stdoutBuffer);
-        if (stderrBuffer.trim()) { job.errorLines.push(stderrBuffer.trim()); broadcast('job:output', { line: stderrBuffer, stream: 'stderr' }); }
+        try {
+            // Flush any buffered partial lines
+            if (stdoutBuffer.trim()) ingestStdoutLine(job, stdoutBuffer);
+            if (stderrBuffer.trim()) { job.errorLines.push(stderrBuffer.trim()); broadcast('job:output', { line: stderrBuffer, stream: 'stderr' }); }
 
-        // Read potfile for results, then classify what actually happened
-        readCrackedFromPotfile(potfile, job);
-        const outcome = classifyOutcome(job, code, signal);
-        job.state = outcome.state;
-        job.exitCode = code;
-        job.error = outcome.error;
-        job.endTime = Date.now();
+            // Read potfile for results, then classify what actually happened
+            readCrackedFromPotfile(potfile, job);
+            const outcome = classifyOutcome(job, code, signal);
+            job.state = outcome.state;
+            job.exitCode = code;
+            job.error = outcome.error;
+            job.endTime = Date.now();
 
-        broadcast('job:finished', {
-            id: job.id,
-            state: outcome.state,
-            exitCode: code,
-            signal: signal || null,
-            duration: job.endTime - job.startTime,
-            crackedPasswords: job.crackedPasswords,
-            error: outcome.error,
-            context: { attackMode: job.attackMode, dictionary: job.dictionary, mask: job.mask },
-        });
+            broadcast('job:finished', {
+                id: job.id,
+                state: outcome.state,
+                exitCode: code,
+                signal: signal || null,
+                duration: job.endTime - job.startTime,
+                crackedPasswords: job.crackedPasswords,
+                error: outcome.error,
+                context: { attackMode: job.attackMode, dictionary: job.dictionary, mask: job.mask },
+            });
 
-        recordHistory(job);
-
-        console.log(`[Hashcat] Process exited (code=${code}, signal=${signal || 'none'}) → ${outcome.state}${outcome.error ? `: ${outcome.error}` : ''}`);
+            recordHistory(job);
+            console.log(`[Hashcat] Process exited (code=${code}, signal=${signal || 'none'}) → ${outcome.state}${outcome.error ? `: ${outcome.error}` : ''}`);
+        } catch (err) {
+            console.error('[Hashcat] Error finalizing job:', err && err.stack ? err.stack : err);
+        }
     });
 
     proc.on('error', (err) => {
@@ -611,10 +634,9 @@ function stopJob() {
         currentJob.state = 'stopping';
 
         // Force kill after 5 seconds if still running
+        const procRef = currentJob.process;
         setTimeout(() => {
-            if (currentJob && currentJob.process && !currentJob.process.killed) {
-                currentJob.process.kill('SIGTERM');
-            }
+            try { if (procRef && !procRef.killed) procRef.kill(); } catch { /* already gone */ }
         }, 5000);
 
         broadcast('job:stopping', { id: currentJob.id });
@@ -674,6 +696,7 @@ async function resumeJob(sessionName) {
         process: null,
         lastStatus: null,
         outputLines: [],
+        logLines: [],
         errorLines: [],
         userStopped: false,
         crackedPasswords: [],
@@ -691,6 +714,7 @@ async function resumeJob(sessionName) {
 
     job.process = proc;
     job.state = 'running';
+    if (proc.stdin) proc.stdin.on('error', () => { /* ignore broken-pipe on exit */ });
 
     // Same event handlers as startJob
     let stdoutBuffer = '';
@@ -710,33 +734,38 @@ async function resumeJob(sessionName) {
             if (!line.trim()) continue;
             job.outputLines.push(`[stderr] ${line}`);
             job.errorLines.push(line.trim());
+            pushLog(job, line);
             broadcast('job:output', { line, stream: 'stderr' });
         }
     });
 
     proc.on('close', (code, signal) => {
-        if (stdoutBuffer.trim()) ingestStdoutLine(job, stdoutBuffer);
-        if (stderrBuffer.trim()) { job.errorLines.push(stderrBuffer.trim()); broadcast('job:output', { line: stderrBuffer, stream: 'stderr' }); }
+        try {
+            if (stdoutBuffer.trim()) ingestStdoutLine(job, stdoutBuffer);
+            if (stderrBuffer.trim()) { job.errorLines.push(stderrBuffer.trim()); broadcast('job:output', { line: stderrBuffer, stream: 'stderr' }); }
 
-        readCrackedFromPotfile(potfile, job);
-        const outcome = classifyOutcome(job, code, signal);
-        job.state = outcome.state;
-        job.exitCode = code;
-        job.error = outcome.error;
-        job.endTime = Date.now();
+            readCrackedFromPotfile(potfile, job);
+            const outcome = classifyOutcome(job, code, signal);
+            job.state = outcome.state;
+            job.exitCode = code;
+            job.error = outcome.error;
+            job.endTime = Date.now();
 
-        broadcast('job:finished', {
-            id: job.id,
-            state: outcome.state,
-            exitCode: code,
-            signal: signal || null,
-            duration: job.endTime - job.startTime,
-            crackedPasswords: job.crackedPasswords,
-            error: outcome.error,
-            context: { attackMode: null, dictionary: null, mask: null },
-        });
+            broadcast('job:finished', {
+                id: job.id,
+                state: outcome.state,
+                exitCode: code,
+                signal: signal || null,
+                duration: job.endTime - job.startTime,
+                crackedPasswords: job.crackedPasswords,
+                error: outcome.error,
+                context: { attackMode: null, dictionary: null, mask: null },
+            });
 
-        recordHistory(job);
+            recordHistory(job);
+        } catch (err) {
+            console.error('[Hashcat] Error finalizing resumed job:', err && err.stack ? err.stack : err);
+        }
     });
 
     proc.on('error', (err) => {

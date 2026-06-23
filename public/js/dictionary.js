@@ -36,6 +36,18 @@ window.initDictionary = function() {
     fileInput.addEventListener('change', function() {
         if (this.files.length > 0) handleDictUpload(this.files[0]);
     });
+
+    const refreshBtn = document.getElementById('btn-refresh-dicts');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            refreshBtn.disabled = true;
+            const orig = refreshBtn.textContent;
+            refreshBtn.textContent = 'Refreshing…';
+            try { if (window.loadDictionaries) await window.loadDictionaries(); showToast('Dictionaries refreshed', 'success'); }
+            catch (e) { showToast('Refresh failed', 'error'); }
+            finally { refreshBtn.disabled = false; refreshBtn.textContent = orig; }
+        });
+    }
 };
 
 function handleDictUpload(file) {

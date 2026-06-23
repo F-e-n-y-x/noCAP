@@ -132,10 +132,11 @@ server.listen(config.port, config.host, () => {
 
 // Don't let a stray rejection/exception take the whole server down silently
 process.on('unhandledRejection', (err) => {
-    console.error('[Server] Unhandled rejection:', err && err.message ? err.message : err);
+    console.error('[Server] Unhandled rejection:', err && err.stack ? err.stack : err);
 });
 process.on('uncaughtException', (err) => {
-    console.error('[Server] Uncaught exception:', err && err.message ? err.message : err);
+    // Log and keep running — a crack finishing or a flaky sensor read must never kill the server
+    console.error('[Server] Uncaught exception (server stays up):', err && err.stack ? err.stack : err);
 });
 
 module.exports = { app, server };

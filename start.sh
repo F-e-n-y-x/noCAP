@@ -46,11 +46,12 @@ if ! command -v hashcat &> /dev/null && [ ! -f "./hashcat/hashcat.bin" ]; then
                 exit 1
             fi
         fi
-        echo "Downloading Hashcat v6.2.6..."
-        curl -L -o hashcat.7z https://github.com/hashcat/hashcat/releases/download/v6.2.6/hashcat-6.2.6.7z
-        echo "Extracting Hashcat..."
+        echo "Downloading hashcat v7.1.2..."
+        curl -L -o hashcat.7z https://github.com/hashcat/hashcat/releases/download/v7.1.2/hashcat-7.1.2.7z
+        echo "Extracting hashcat..."
         7z x hashcat.7z -y > /dev/null
-        mv hashcat-6.2.6 hashcat
+        [ -d hashcat ] && rm -rf hashcat
+        mv hashcat-7.1.2 hashcat
         rm hashcat.7z
         echo -e "${GREEN}[OK] Hashcat installed successfully to the local directory!${NC}"
     fi

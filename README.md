@@ -1,4 +1,4 @@
-# 🛜 NoCAP
+# 🛜 NoCAP - WiFi Handshake Cracker
 
 **NoCAP is a simple web app that checks how strong a WiFi password is.**
 
@@ -139,12 +139,6 @@ This tool is for **learning** and **testing your own security** only.
 - The author isn't responsible for misuse.
 
 ---
-
-## 👤 Made by
-
-**Ayush** — [GitHub](https://github.com/F-e-n-y-x/) · [LinkedIn](https://www.linkedin.com/in/ayushsoni2911/)
-
-Project: [github.com/F-e-n-y-x/noCAP](https://github.com/F-e-n-y-x/noCAP)
 
 ## 📄 License
 
