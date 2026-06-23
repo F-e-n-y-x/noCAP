@@ -8,7 +8,37 @@ const router = express.Router();
 const si = require('systeminformation');
 const { detectGPUs, invalidateCache } = require('../gpu-detector');
 const { getSystemHealth, runBenchmark, getHashcatVersion } = require('../hashcat-utils');
+const { checkUpdate, performUpdate } = require('../hashcat-updater');
 const config = require('../config');
+
+let updateInProgress = false;
+
+/**
+ * GET /api/system/hashcat/check — compare installed hashcat vs latest release.
+ */
+router.get('/hashcat/check', async (req, res) => {
+    try {
+        res.json(await checkUpdate());
+    } catch (err) {
+        res.status(502).json({ error: `Update check failed: ${err.message}` });
+    }
+});
+
+/**
+ * POST /api/system/hashcat/update — download, verify, and swap in the latest hashcat.
+ */
+router.post('/hashcat/update', async (req, res) => {
+    if (updateInProgress) return res.status(409).json({ error: 'An update is already running' });
+    updateInProgress = true;
+    try {
+        const result = await performUpdate();
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    } finally {
+        updateInProgress = false;
+    }
+});
 
 /**
  * GET /api/system/stats

@@ -397,6 +397,17 @@ button { font-family: inherit; }
 .brand-line .brand-name { font-size: var(--text-xl); font-weight: var(--weight-semibold); }
 .brand-line .brand-ver { font-size: var(--text-sm); color: var(--subtle-foreground); font-family: var(--font-mono); }
 
+/* hashcat update notice */
+.update-status:empty { display: none; }
+.update-status { margin-top: var(--space-3); }
+.update-note { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;
+    font-size: var(--text-sm); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
+    background: var(--surface-2); color: var(--muted-foreground); }
+.update-note.ok { background: var(--success-soft); color: var(--success); }
+.update-note.warn { background: var(--warning-soft); color: var(--warning); }
+.update-note.err { background: var(--error-soft); color: var(--error); }
+.update-note a { color: inherit; text-decoration: underline; }
+
 /* ── Job result banner ───────────────────────────────────────────────────── */
 .job-result {
     display: flex; gap: var(--space-4); align-items: flex-start;

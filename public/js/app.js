@@ -86,6 +86,7 @@ async function initApp() {
     if (window.initHistory) window.initHistory();
     if (window.initDevices) window.initDevices();
     if (window.initCustomSelects) window.initCustomSelects();
+    setupHashcatUpdate();
     
     // Connect WebSocket last
     if (window.connectWebSocket) window.connectWebSocket();
@@ -164,9 +165,9 @@ async function loadSystemInfo() {
                 <span class="brand-name">NoCAP</span>
                 <span class="brand-ver">v${APP_VERSION}</span>
             </div>
+            <div class="info-row"><span class="info-label">Version</span><span class="info-value">v${APP_VERSION}</span></div>
             <div class="info-row"><span class="info-label">Served at</span><span class="info-value">${escapeHtml(location.host)}</span></div>
             <div class="info-row"><span class="info-label">Platform</span><span class="info-value">${escapeHtml(data.platform || '—')}</span></div>
-            <div class="info-row"><span class="info-label">hashcat</span><span class="info-value ${data.hashcatInstalled ? 'success' : 'error'}">${data.hashcatInstalled ? escapeHtml(data.hashcatVersion || 'installed') : 'not found'}</span></div>
             <div class="info-row"><span class="info-label">Hash mode</span><span class="info-value">22000 · WPA</span></div>
             <div class="info-row"><span class="info-label">Author</span><span class="info-value">
                 <a href="https://github.com/F-e-n-y-x/" target="_blank" rel="noopener">Ayush</a> ·
@@ -175,26 +176,23 @@ async function loadSystemInfo() {
         `;
     }
 
-    // Update system tab
+    // Dependencies card (single source of truth for tool status)
     const depsInfo = document.getElementById('deps-info');
     if (depsInfo) {
         depsInfo.innerHTML = `
             <div class="info-row">
-                <span class="info-label">Platform</span>
-                <span class="info-value">${data.platform}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Hashcat</span>
-                <span class="info-value ${data.hashcatInstalled ? 'success' : 'error'}">
-                    ${data.hashcatInstalled ? `Found (${data.hashcatVersion || 'Unknown version'})` : 'Not Found'}
-                </span>
+                <span class="info-label">hashcat</span>
+                <span class="info-value ${data.hashcatInstalled ? 'success' : 'error'}">${data.hashcatInstalled ? escapeHtml(data.hashcatVersion || 'installed') : 'not found'}</span>
             </div>
             <div class="info-row">
                 <span class="info-label">hcxpcapngtool</span>
-                <span class="info-value ${data.hcxpcapngtoolAvailable ? 'success' : (data.platform === 'win32' ? '' : 'error')}">
-                    ${data.hcxpcapngtoolAvailable ? 'Found' : (data.platform === 'win32' ? 'N/A (Linux only)' : 'Not Found')}
-                </span>
+                <span class="info-value ${data.hcxpcapngtoolAvailable ? 'success' : (data.platform === 'win32' ? '' : 'error')}">${data.hcxpcapngtoolAvailable ? 'found' : (data.platform === 'win32' ? 'N/A (Linux only)' : 'not found')}</span>
             </div>
+            <div class="info-row">
+                <span class="info-label">Python</span>
+                <span class="info-value ${data.pythonAvailable ? 'success' : ''}">${data.pythonAvailable ? 'found' : 'not detected'}</span>
+            </div>
+            <div id="hashcat-update-status" class="update-status"></div>
         `;
     }
     
@@ -307,6 +305,55 @@ async function loadPotfile() {
             `).join('')}
         </div>
     `;
+}
+
+// ── hashcat update ────────────────────────────────────────────────────
+function setupHashcatUpdate() {
+    const btn = document.getElementById('btn-check-hashcat');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+        const status = document.getElementById('hashcat-update-status');
+        const orig = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Checking…';
+        try {
+            const res = await fetch('/api/system/hashcat/check');
+            const d = await res.json();
+            if (!res.ok) throw new Error(d.error || 'Check failed');
+            if (!status) return;
+            if (d.updateAvailable) {
+                status.innerHTML = `<div class="update-note warn">Update available — <strong>${escapeHtml(d.latest)}</strong> (you have ${escapeHtml(d.current || '?')}).
+                    <button id="btn-do-update" class="btn btn-sm btn-primary">Update now</button>
+                    <a href="${escapeHtml(d.releaseUrl)}" target="_blank" rel="noopener">release notes ↗</a></div>`;
+                document.getElementById('btn-do-update').addEventListener('click', doHashcatUpdate);
+            } else if (d.current) {
+                status.innerHTML = `<div class="update-note ok">hashcat ${escapeHtml(d.current)} is up to date.</div>`;
+            } else {
+                status.innerHTML = `<div class="update-note warn">hashcat isn't installed (latest: ${escapeHtml(d.latest || '?')}).
+                    <button id="btn-do-update" class="btn btn-sm btn-primary">Install</button></div>`;
+                const b = document.getElementById('btn-do-update'); if (b) b.addEventListener('click', doHashcatUpdate);
+            }
+        } catch (err) {
+            if (status) status.innerHTML = `<div class="update-note err">${escapeHtml(err.message)}</div>`;
+        } finally {
+            btn.disabled = false; btn.textContent = orig;
+        }
+    });
+}
+
+async function doHashcatUpdate() {
+    if (!confirm('Download and install the latest hashcat? Downloads ~70 MB and may take a minute. Your current install is kept as a backup.')) return;
+    const status = document.getElementById('hashcat-update-status');
+    if (status) status.innerHTML = `<div class="update-note">Updating… downloading &amp; extracting hashcat (this can take a minute)…</div>`;
+    try {
+        const res = await fetch('/api/system/hashcat/update', { method: 'POST' });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error || 'Update failed');
+        showToast(`hashcat updated to ${d.version || 'latest'}`, 'success', 7000);
+        loadSystemInfo();
+    } catch (err) {
+        showToast(`Update failed: ${err.message}`, 'error', 8000);
+        if (status) status.innerHTML = `<div class="update-note err">${escapeHtml(err.message)}</div>`;
+    }
 }
 
 window.removeSession = async function(sessionName) {

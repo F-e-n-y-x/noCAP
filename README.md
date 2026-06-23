@@ -12,17 +12,19 @@ A professional, cross-platform web console for cracking WiFi handshakes using **
 
 | Feature | Description |
 |---------|-------------|
-| 🎯 **Auto GPU Detection** | Automatically detects your GPU (NVIDIA/AMD/Intel) and applies optimized presets |
-| 🔄 **Auto Cap Conversion** | Converts .cap/.pcap/.pcapng files to hashcat-compatible .hc22000 format |
-| 📁 **Drag & Drop Upload** | Easy file upload with drag-and-drop or file browser |
-| 📚 **Dictionary Manager** | Download popular wordlists (RockYou, SecLists, Weakpass) with one click |
-| 📊 **Real-time Monitoring** | Live progress, speed, temperature, and ETA via WebSocket |
-| ⏸️ **Session Management** | Pause, resume, and restore cracking sessions |
-| 🎨 **Modern Dark UI** | Premium cybersecurity-themed interface with glassmorphism design |
-| 🖥️ **Cross-Platform** | Works on both Windows and Linux with one-click setup scripts |
-| 🔧 **Multiple Attack Modes** | Dictionary, Combinator, Brute-force, Mask, Hybrid, and Rule-based attacks |
-| 📋 **Potfile Viewer** | Browse all previously cracked passwords |
-| 🔔 **Browser Notifications** | Get notified when a password is cracked |
+| ⚡ **Single-page crack console** | Upload, configure, and watch live progress side-by-side — no tab hopping |
+| 🎯 **Auto GPU detection & presets** | Detects NVIDIA / AMD / Intel GPUs and applies tuned workload/temperature presets |
+| 🔄 **Built-in cap conversion** | Native `.cap/.pcap/.pcapng` → `.hc22000` parser (handshakes + PMKID), with `hcxpcapngtool` used when available |
+| 📚 **Dictionary manager** | One-click download of curated WiFi & general wordlists (tiny WPA lists → RockYou → 1.5 GB lists) with progress |
+| 📊 **Real-time monitoring** | Live status, speed, ETA, GPU temperature, and a redesigned keyspace progress panel over WebSocket |
+| 🧠 **Clear outcomes** | Tells you *why* a job ended — cracked / no match / error — with the real hashcat error and next steps |
+| 🗂️ **Persistent history** | Every job saved (attack, wordlist, result, passwords, duration) with CSV export |
+| 🖥️ **Live device telemetry** | Task-manager style RAM + GPU (load / temp / VRAM) panel, cross-platform |
+| ⏸️ **Sessions** | Pause, resume, restore, and delete checkpointed sessions |
+| ⬆️ **hashcat updater** | Check for and install the latest hashcat from the UI (safe swap with backup) |
+| 🔧 **All attack modes** | Dictionary, Combinator, Brute-force/Mask, Hybrid, and rule-based |
+| 🎨 **Token-based design system** | Clean Geist/Vercel-neutral UI with light & dark themes (no neon/glassmorphism) |
+| 🔐 **Secure by default** | Binds to localhost; optional bearer-token auth; validated inputs |
 
 ---
 
@@ -62,19 +64,28 @@ The setup script will:
 
 ## 🎮 Usage
 
-1. **Upload** — Drag and drop your .cap file (or click to browse)
-2. **Configure** — Select attack mode, dictionary, and review GPU preset
-3. **Crack** — Click Start and monitor progress in real-time
-4. **Results** — View cracked passwords in the results panel
+The UI has four pages:
+
+- **Crack** — drop a `.cap`, pick the hash file, choose an attack mode + dictionary, hit **Start**, and watch live telemetry beside the controls.
+- **Dictionaries** — download curated wordlists or upload your own.
+- **History** — review past jobs and export to CSV.
+- **System** — live RAM/GPU telemetry, dependency status, potfile vault, sessions, and a one-click **hashcat update** check.
+
+> **Tip for getting cracks:** WPA needs the network's beacon (for the ESSID) in the capture, and the password must be in your wordlist. Start with a WiFi list, then RockYou, then a larger list.
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-Frontend (Vanilla JS) ←→ REST API + WebSocket ←→ Hashcat Process
-                              ↓
-                    GPU Detector | Cap Converter | Dict Manager
+Frontend (vanilla JS + token design system)
+        │  REST API + WebSocket
+        ▼
+Express server ── hashcat process manager ──► hashcat
+        ├─ native cap → hc22000 parser
+        ├─ GPU detector + presets
+        ├─ dictionary downloader
+        └─ live system telemetry / updater
 ```
 
 ---
@@ -113,6 +124,14 @@ an `X-Auth-Token` header, or a `?token=` query parameter (the WebSocket uses `?t
 > - Unauthorized access to computer networks is illegal in most jurisdictions.
 > - The authors are not responsible for misuse of this tool.
 > - This project was developed as part of an MCA security research curriculum.
+
+---
+
+## 👤 Author
+
+Made by **Ayush** — [GitHub](https://github.com/F-e-n-y-x/) · [LinkedIn](https://www.linkedin.com/in/ayushsoni2911/)
+
+Repository: [github.com/F-e-n-y-x/noCAP](https://github.com/F-e-n-y-x/noCAP)
 
 ---
 

@@ -35,19 +35,6 @@ function renderDevices(d) {
     const el = document.getElementById('devices-content');
     if (!el) return;
 
-    // CPU
-    const cores = (d.cpu.cores || []).map((c, i) =>
-        `<div class="core" title="Core ${i}: ${c}%"><div class="core-fill ${toneFor(c)}" style="height:${Math.max(3, c)}%"></div></div>`
-    ).join('');
-
-    const cpuBlock = `
-        <div class="device-block">
-            <div class="device-block-head"><span class="device-title">CPU</span>
-                <span class="device-sub">${d.cpu.temp != null ? d.cpu.temp + '°C · ' : ''}${(d.cpu.cores || []).length} threads</span></div>
-            ${meter('Total load', d.cpu.load + '%', d.cpu.load, toneFor(d.cpu.load))}
-            <div class="core-grid">${cores}</div>
-        </div>`;
-
     const memBlock = `
         <div class="device-block">
             <div class="device-block-head"><span class="device-title">Memory</span>
@@ -77,7 +64,7 @@ function renderDevices(d) {
             </div>
         </div>` : '';
 
-    el.innerHTML = `<div class="devices-grid">${cpuBlock}${memBlock}${gpuBlock}</div>`;
+    el.innerHTML = `<div class="devices-grid">${memBlock}${gpuBlock}</div>`;
 }
 
 async function pollDevices() {

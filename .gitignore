@@ -9,6 +9,8 @@ kernels/
 
 # Bundled hashcat distribution (users install their own — see start scripts)
 hashcat/
+hashcat_backup/
+.hcupdate/
 
 # Capture files & cracked output
 *.hc22000

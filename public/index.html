@@ -235,10 +235,6 @@
                                 <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg></div>
                                 <div class="stat-info"><span class="stat-label">GPU Temp</span><span class="stat-value" id="monitor-temp">— °C</span></div>
                             </div>
-                            <div class="stat-card highlight" id="card-cracked">
-                                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-                                <div class="stat-info"><span class="stat-label">Cracked</span><span class="stat-value" id="monitor-cracked">0 / 0</span></div>
-                            </div>
                         </div>
 
                         <div class="progress-panel">
@@ -323,32 +319,25 @@
                 </div>
 
                 <div class="system-grid">
+                    <div class="system-card" id="server-card">
+                        <div class="system-card-header"><h3>About</h3></div>
+                        <div id="server-info" class="server-info"><div class="loading-spinner">Loading…</div></div>
+                    </div>
+
+                    <div class="system-card" id="deps-card">
+                        <div class="system-card-header">
+                            <h3>Dependencies</h3>
+                            <button id="btn-check-hashcat" class="btn btn-sm btn-secondary">Check for updates</button>
+                        </div>
+                        <div id="deps-info" class="deps-info"><div class="loading-spinner">Checking…</div></div>
+                    </div>
+
                     <div class="system-card full-width" id="devices-card">
                         <div class="system-card-header">
                             <h3>Devices — Live</h3>
                             <span id="devices-indicator" class="device-live"><span class="device-live-dot"></span> live</span>
                         </div>
                         <div id="devices-content" class="devices-content"><div class="loading-spinner">Reading sensors…</div></div>
-                    </div>
-
-                    <div class="system-card" id="server-card">
-                        <div class="system-card-header"><h3>NoCAP</h3></div>
-                        <div id="server-info" class="server-info"><div class="loading-spinner">Loading…</div></div>
-                    </div>
-
-                    <div class="system-card" id="gpu-card">
-                        <div class="system-card-header"><h3>GPU</h3><button id="btn-refresh-gpu" class="btn btn-sm btn-ghost">Refresh</button></div>
-                        <div id="gpu-info" class="gpu-info"><div class="loading-spinner">Detecting GPU…</div></div>
-                    </div>
-
-                    <div class="system-card" id="health-card">
-                        <div class="system-card-header"><h3>System Health</h3></div>
-                        <div id="health-info" class="health-info"><div class="loading-spinner">Loading…</div></div>
-                    </div>
-
-                    <div class="system-card" id="deps-card">
-                        <div class="system-card-header"><h3>Dependencies</h3></div>
-                        <div id="deps-info" class="deps-info"><div class="loading-spinner">Checking…</div></div>
                     </div>
 
                     <div class="system-card full-width" id="potfile-card">
