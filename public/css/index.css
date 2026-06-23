@@ -8,7 +8,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; padding: 0; }
 
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; overflow-x: clip; }
 
 body {
     font-family: var(--font-sans);
@@ -19,6 +19,8 @@ body {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     min-height: 100vh;
+    max-width: 100%;
+    overflow-x: clip;
 }
 
 h1, h2, h3, h4 { line-height: var(--leading-tight); font-weight: var(--weight-semibold); }
@@ -706,11 +708,17 @@ button { font-family: inherit; }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
-/* Tablets / small laptops — header wraps, nav becomes a clean scroll strip */
+/* Tablets / small laptops — header wraps, nav becomes a clean scroll strip.
+   Row 1: logo + icons (space-between). Row 2: the nav, full width, scrollable. */
 @media (max-width: 860px) {
     #app-header { flex-wrap: wrap; height: auto; gap: var(--space-3); padding: var(--space-3) var(--space-4); }
+    .header-left, .header-right { flex: 0 0 auto; }
+    .header-center {
+        order: 3; flex: 1 0 100%; min-width: 0;   /* full-width second row */
+        display: flex; justify-content: flex-start;
+    }
     #main-nav {
-        order: 3; width: 100%; overflow-x: auto;
+        width: 100%; overflow-x: auto;
         scrollbar-width: none; -webkit-overflow-scrolling: touch;
     }
     #main-nav::-webkit-scrollbar { display: none; }
